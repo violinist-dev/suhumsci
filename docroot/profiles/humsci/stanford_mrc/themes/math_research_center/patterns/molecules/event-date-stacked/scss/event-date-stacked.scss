@@ -10,8 +10,8 @@
 
 // Stanford Math Research Center
 @import
-  '../utilities/mixins/mixins',
-  'patterns/atoms/date-stacked/scss/date-stacked';
+  '../../../../scss/utilities/mixins/mixins',
+  '../../../atoms/date-stacked/scss/date-stacked';
 
 .mrc-event-date-stacked-card {
   @include mrc-card-container;

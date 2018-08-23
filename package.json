@@ -1,0 +1,41 @@
+{
+  "name": "suhumsci",
+  "version": "1.0.0",
+  "description": "H&S Drupal 8 multisite",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SU-HSDO/suhumsci.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SU-HSDO/suhumsci/issues"
+  },
+  "homepage": "https://github.com/SU-HSDO/suhumsci#readme",
+  "devDependencies": {
+    "bourbon": "^5.0.0",
+    "bourbon-neat": "^1.8.0",
+    "decanter": "^3.0.0",
+    "grunt": "^1.0.3",
+    "grunt-autoprefixer": "^3.0.3",
+    "grunt-available-tasks": "^0.6.3",
+    "grunt-browser-sync": "^2.2.0",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-imagemin": "^1.0.0",
+    "grunt-contrib-uglify": "^3.3.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-drush": "^0.0.7",
+    "grunt-notify": "^0.4.3",
+    "grunt-sass": "^2.1.0",
+    "grunt-svgmin": "^3.1.2",
+    "neat-omega": "^3.0.1",
+    "normalize.css": "^8.0.0"
+  }
+}

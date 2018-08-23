@@ -10,7 +10,7 @@
 
 // Stanford Math Research Center
 @import
-  '../utilities/mixins/mixins';
+  '../../../../scss/utilities/mixins/mixins';
 
 .mrc-date-stacked {
   @include mrc-date-stacked;

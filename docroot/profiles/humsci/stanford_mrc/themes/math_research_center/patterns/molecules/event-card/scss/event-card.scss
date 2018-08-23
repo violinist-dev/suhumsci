@@ -10,7 +10,7 @@
 
 // Stanford Math Research Center
 @import
-'../utilities/mixins/mixins';
+'../../../../scss/utilities/mixins/mixins';
 
 .mrc-event-card {
   @include margin(null null 2em);

@@ -15,7 +15,7 @@
 // Stanford Math Research Center
 
 @import
-  '../utilities/mixins/mixins';
+  '../../../../scss/utilities/mixins/mixins';
 
 .mrc-postcard--horizontal {
   @include margin(null null 2em);

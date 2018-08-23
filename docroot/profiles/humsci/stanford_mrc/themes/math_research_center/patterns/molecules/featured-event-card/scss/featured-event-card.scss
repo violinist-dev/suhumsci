@@ -13,7 +13,7 @@
 
 // Stanford Math Research Center
 @import
-  '../utilities/mixins/mixins';
+  '../../../../scss/utilities/mixins/mixins';
 
 .mrc-featured-event-card {
   @include mrc-card-container;
