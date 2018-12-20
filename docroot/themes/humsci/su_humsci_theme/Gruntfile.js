@@ -35,10 +35,6 @@ module.exports = function(grunt) {
         options: {
           interrupt: true
         }
-      },
-      twig: {
-        files: ['templates/**/*.html.twig'],
-        tasks: ['uglify', 'svgmin', 'imagemin', 'sass', 'drush:ccall']
       }
     },
     uglify: {
@@ -93,7 +89,7 @@ module.exports = function(grunt) {
           "node_modules/bourbon/core",
           "node_modules/bourbon-neat/app/assets/stylesheets",
           "node_modules/neat-omega/core",
-          "node_modules/decanter/scss",
+          "node_modules/decanter/core/scss",
           "node_modules",
         ],
         sourceMap: false,
@@ -125,11 +121,6 @@ module.exports = function(grunt) {
             }
           }
         ]
-      }
-    },
-    drush: {
-      ccall: {
-        args: ['cache-rebuild', 'all']
       }
     },
     browserSync: {
@@ -173,7 +164,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-browser-sync');
   grunt.loadNpmTasks('grunt-available-tasks');
-  grunt.loadNpmTasks('grunt-drush');
 
   // My tasks.
   grunt.registerTask('devmode', "Watch and BrowserSync all in one.", ['browserSync', 'watch']);

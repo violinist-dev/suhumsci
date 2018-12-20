@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "84aebee517da451a95678514f8c5cdb9",
+    "content-hash": "c4afca38b5bc08cd66de000725b92f24",
     "packages": [
         {
             "name": "acquia/blt",
@@ -2481,17 +2481,17 @@
         },
         {
             "name": "drupal/blazy",
-            "version": "1.0.0-rc3",
+            "version": "1.0.0-rc4",
             "source": {
                 "type": "git",
                 "url": "https://git.drupal.org/project/blazy",
-                "reference": "8.x-1.0-rc3"
+                "reference": "8.x-1.0-rc4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/blazy-8.x-1.0-rc3.zip",
-                "reference": "8.x-1.0-rc3",
-                "shasum": "a92409f7d19ed984362b213c6245f8eda3bef03a"
+                "url": "https://ftp.drupal.org/files/projects/blazy-8.x-1.0-rc4.zip",
+                "reference": "8.x-1.0-rc4",
+                "shasum": "cea1185469fc6d19a5162f550e12f26cff193062"
             },
             "require": {
                 "drupal/core": "*"
@@ -2502,8 +2502,8 @@
                     "dev-1.x": "1.x-dev"
                 },
                 "drupal": {
-                    "version": "8.x-1.0-rc3",
-                    "datestamp": "1538045580",
+                    "version": "8.x-1.0-rc4",
+                    "datestamp": "1545235980",
                     "security-coverage": {
                         "status": "not-covered",
                         "message": "Project has not opted into security advisory coverage!"
@@ -7377,17 +7377,17 @@
         },
         {
             "name": "drupal/slick",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://git.drupal.org/project/slick",
-                "reference": "8.x-1.0"
+                "reference": "8.x-1.1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/slick-8.x-1.0.zip",
-                "reference": "8.x-1.0",
-                "shasum": "14ae69943a07749163ed13900dcd0a6809c54ebd"
+                "url": "https://ftp.drupal.org/files/projects/slick-8.x-1.1.zip",
+                "reference": "8.x-1.1",
+                "shasum": "8565c1e74cfb5e6316c1cdb357868107303f2be4"
             },
             "require": {
                 "drupal/blazy": "~1.0",
@@ -7399,8 +7399,8 @@
                     "dev-1.x": "1.x-dev"
                 },
                 "drupal": {
-                    "version": "8.x-1.0",
-                    "datestamp": "1495746183",
+                    "version": "8.x-1.1",
+                    "datestamp": "1545236281",
                     "security-coverage": {
                         "status": "covered",
                         "message": "Covered by Drupal's security advisory policy"
@@ -11606,16 +11606,16 @@
         },
         {
             "name": "su-sws/stanford_basic",
-            "version": "dev-8.x-2.x",
+            "version": "dev-8.x-4.x",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SU-SWS/stanford_basic.git",
-                "reference": "0a6ac06178c192dd69c3607edabbc50bc08d28a5"
+                "reference": "67d255e30dee2f762256964da59855f7859f71dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SU-SWS/stanford_basic/zipball/0a6ac06178c192dd69c3607edabbc50bc08d28a5",
-                "reference": "0a6ac06178c192dd69c3607edabbc50bc08d28a5",
+                "url": "https://api.github.com/repos/SU-SWS/stanford_basic/zipball/67d255e30dee2f762256964da59855f7859f71dc",
+                "reference": "67d255e30dee2f762256964da59855f7859f71dc",
                 "shasum": ""
             },
             "type": "drupal-custom-theme",
@@ -11625,10 +11625,10 @@
             "description": "Stanford Basic Branding Theme.",
             "homepage": "https://github.com/SU-SWS/stanford_basic",
             "support": {
-                "source": "https://github.com/SU-SWS/stanford_basic/tree/8.x-2.x",
+                "source": "https://github.com/SU-SWS/stanford_basic/tree/8.x-4.x",
                 "issues": "https://github.com/SU-SWS/stanford_basic/issues"
             },
-            "time": "2018-11-14T17:42:12+00:00"
+            "time": "2018-12-19T17:26:16+00:00"
         },
         {
             "name": "su-sws/stanford_media",

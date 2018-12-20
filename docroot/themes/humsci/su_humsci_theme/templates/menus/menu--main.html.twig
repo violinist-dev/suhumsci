@@ -13,9 +13,9 @@
   {% if items %}
     {% if menu_level == 0 %}
 
-      <ul{{ attributes.addClass(['menu', 'decanter-nav-primary']) }}>
+      <ul{{ attributes.addClass(['menu', 'nav-primary']) }}>
       {% else %}
-        <ul class="menu decanter-nav-submenu">
+        <ul class="menu nav-submenu">
         {% endif %}
         {% for item in items %}
           {%

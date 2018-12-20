@@ -1,36 +1,86 @@
+
 {% if content.left_sidebar and content.right_sidebar %}
-  {% set main_class = 'decanter-width-one-half' %}
-{% elseif content.left_sidebar or content.right_sidebar %}
-  {% set main_class = 'decanter-width-three-fourths' %}
-{% endif %}
-{% set sidebar_class = 'decanter-width-one-fourth' %}
+    {% if settings.region_widths == 'equal' %}
+        {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-bars']) %}
 
-{% set attributes = attributes.addClass([settings.section_width, 'clearfix', 'three-column']) %}
-{% if settings.region_widths == 'equal' and content.left_sidebar and content.right_sidebar %}
-  {% set sidebar_class = 'decanter-width-one-third' %}
-  {% set main_class = 'decanter-width-one-third' %}
-{% endif %}
 
-{% if content %}
+        {% include "@decanter/layout/grid/three-column/bars/bars.twig" with
+            {
+                'attributes': attributes,
+                'first': content.left_sidebar,
+                'first_attributes': region_attributes.left_sidebar.addClass('layout__region'),
+                'second': content.main,
+                'second_attributes': region_attributes.main.addClass('layout__region'),
+                'third': content.right_sidebar,
+                'third_attributes': region_attributes.right_sidebar.addClass('layout__region'),
+            } %}
 
-  <div{{ attributes.addClass('layout') }}>
+    {% else %}
+        {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-robot']) %}
 
-    {% if content.left_sidebar %}
-      <div{{ region_attributes.left_sidebar.addClass([sidebar_class, 'layout__region']) }}>
-        {{ content.left_sidebar }}
-      </div>
+        {% include "@decanter/layout/grid/three-column/robot/robot.twig" with
+            {
+                'attributes': attributes,
+                'first': content.left_sidebar,
+                'first_attributes': region_attributes.left_sidebar.addClass('layout__region'),
+                'second': content.main,
+                'second_attributes': region_attributes.main.addClass('layout__region'),
+                'third': content.right_sidebar,
+                'third_attributes': region_attributes.right_sidebar.addClass('layout__region'),
+            } %}
+
     {% endif %}
+{% elseif content.left_sidebar or content.right_sidebar %}
+    {% if content.left_sidebar %}
+        {% if settings.region_widths == 'equal' %}
+            {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-toucan']) %}
 
-    <div{{ region_attributes.main.addClass([main_class, 'layout__region']) }}>
-      {{ content.main }}
-    </div>
+            {% include "@decanter/layout/grid/two-column/toucan/toucan.twig" with
+                {
+                    'attributes': attributes,
+                    'first': content.left_sidebar,
+                    'first_attributes': region_attributes.left_sidebar.addClass('layout__region'),
+                    'second': content.main,
+                    'second_attributes': region_attributes.main.addClass('layout__region'),
+                } %}
+
+        {% else %}
+            {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-pacman']) %}
+
+
+            {% include "@decanter/layout/grid/two-column/pacman/pacman.twig" with
+                {
+                    'attributes': attributes,
+                    'sidebar': content.left_sidebar,
+                    'sidebar_attributes': region_attributes.left_sidebar.addClass('layout__region'),
+                    'content': content.main,
+                    'content_attributes': region_attributes.main.addClass('layout__region'),
+                } %}
+
+        {% endif %}
+    {% endif %}
 
     {% if content.right_sidebar %}
-      <div{{ region_attributes.right_sidebar.addClass([sidebar_class, 'layout__region']) }}>
-        {{ content.right_sidebar }}
-      </div>
-    {% endif %}
+        {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-toucan']) %}
 
-  </div>
+        {% include "@decanter/layout/grid/two-column/toucan/toucan.twig" with
+            {
+                'attributes': attributes,
+                'first': content.main,
+                'first_attributes': region_attributes.main.addClass('layout__region'),
+                'second': content.right_sidebar,
+                'second_attributes': region_attributes.right_sidebar.addClass('layout__region'),
+            } %}
+
+    {% endif %}
+{% else %}
+    {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-basic']) %}
+
+    {% include "@decanter/layout/grid/one-column/basic/basic.twig" with
+        {
+            'attributes': attributes,
+            'content': content.main,
+            'content_attributes': region_attributes.main.addClass('layout__region'),
+        } %}
 
 {% endif %}
