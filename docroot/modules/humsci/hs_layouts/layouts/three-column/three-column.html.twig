@@ -1,11 +1,9 @@
-{% set attributes = attributes.addClass(['layout', settings.section_width]) %}
+{#{% set attributes = attributes.addClass(['layout', settings.section_width]) %}#}
 
 {% if content.left_sidebar and content.right_sidebar %}
     {% if settings.region_widths == 'equal' %}
-        {% set attributes = attributes.addClass(['layout-bars']) %}
 
-
-        {% include "@decanter/layout/grid/three-column/bars/bars.twig" with
+        {% include "@decanter/layout/flex/three-column/bars/bars.twig" with
             {
                 'attributes': attributes,
                 'first': content.left_sidebar,
@@ -17,9 +15,8 @@
             } %}
 
     {% else %}
-        {% set attributes = attributes.addClass(['layout-robot']) %}
 
-        {% include "@decanter/layout/grid/three-column/robot/robot.twig" with
+        {% include "@decanter/layout/flex/three-column/robot/robot.twig" with
             {
                 'attributes': attributes,
                 'first': content.left_sidebar,
@@ -34,9 +31,8 @@
 {% elseif content.left_sidebar or content.right_sidebar %}
     {% if content.left_sidebar %}
         {% if settings.region_widths == 'equal' %}
-            {% set attributes = attributes.addClass(['layout-toucan']) %}
 
-            {% include "@decanter/layout/grid/two-column/toucan/toucan.twig" with
+            {% include "@decanter/layout/flex/two-column/toucan/toucan.twig" with
                 {
                     'attributes': attributes,
                     'first': content.left_sidebar,
@@ -46,10 +42,8 @@
                 } %}
 
         {% else %}
-            {% set attributes = attributes.addClass(['layout-pacman']) %}
 
-
-            {% include "@decanter/layout/grid/two-column/pacman/pacman.twig" with
+            {% include "@decanter/layout/flex/two-column/pacman/pacman.twig" with
                 {
                     'attributes': attributes,
                     'sidebar': content.left_sidebar,
@@ -62,9 +56,8 @@
     {% endif %}
 
     {% if content.right_sidebar %}
-        {% set attributes = attributes.addClass(['layout-toucan']) %}
 
-        {% include "@decanter/layout/grid/two-column/toucan/toucan.twig" with
+        {% include "@decanter/layout/flex/two-column/toucan/toucan.twig" with
             {
                 'attributes': attributes,
                 'first': content.main,
@@ -75,9 +68,9 @@
 
     {% endif %}
 {% else %}
-    {% set attributes = attributes.addClass(['layout-basic']) %}
 
-    {% include "@decanter/layout/grid/one-column/basic/basic.twig" with
+
+    {% include "@decanter/layout/flex/one-column/basic/basic.twig" with
         {
             'attributes': attributes,
             'content': content.main,
