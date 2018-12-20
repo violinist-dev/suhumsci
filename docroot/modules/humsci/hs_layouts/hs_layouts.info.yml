@@ -6,3 +6,8 @@ version: 8.x
 package: 'Humanities & Sciences'
 dependencies:
   - layout_discovery
+
+component-libraries:
+  hs_layouts:
+    paths:
+      - layouts

@@ -33,7 +33,9 @@
   {% endif %}
 
   <section{{ main_attributes }}>
-    {{ content.main }}
+    {% block main_content %}
+      {{ content.main }}
+    {% endblock %}
   </section>
 
   {% if content.right_sidebar %}
