@@ -1,80 +1,45 @@
-{#{% set attributes = attributes.addClass(['layout', settings.section_width]) %}#}
+{% set main_attributes = region_attributes.main %}
 
-{% if content.left_sidebar and content.right_sidebar %}
-    {% if settings.region_widths == 'equal' %}
+{% if settings.region_widths =='equal' %}
 
-        {% include "@decanter/layout/flex/three-column/bars/bars.twig" with
-            {
-                'attributes': attributes,
-                'first': content.left_sidebar,
-                'first_attributes': region_attributes.left_sidebar.addClass('layout__region'),
-                'second': content.main,
-                'second_attributes': region_attributes.main.addClass('layout__region'),
-                'third': content.right_sidebar,
-                'third_attributes': region_attributes.right_sidebar.addClass('layout__region'),
-            } %}
+  {% set left_sidebar_attributes = region_attributes.left_sidebar.addClass(['flex-md-4-of-12', 'flex-lg-4-of-12', 'flex-xl-4-of-12', 'flex-2xl-4-of-12']) %}
+  {% set right_sidebar_attributes = region_attributes.right_sidebar.addClass(['flex-md-4-of-12', 'flex-lg-4-of-12', 'flex-xl-4-of-12', 'flex-2xl-4-of-12']) %}
 
-    {% else %}
+  {% if content.left_sidebar and content.right_sidebar %}
+    {% set main_attributes = main_attributes.addClass(['flex-md-4-of-12', 'flex-lg-4-of-12', 'flex-xl-4-of-12', 'flex-2xl-4-of-12']) %}
+  {% elseif content.left_sidebar or content.right_sidebar %}
+    {% set main_attributes = main_attributes.addClass(['flex-md-6-of-12', 'flex-lg-6-of-12', 'flex-xl-6-of-12', 'flex-2xl-6-of-12']) %}
+  {% endif %}
 
-        {% include "@decanter/layout/flex/three-column/robot/robot.twig" with
-            {
-                'attributes': attributes,
-                'first': content.left_sidebar,
-                'first_attributes': region_attributes.left_sidebar.addClass('layout__region'),
-                'second': content.main,
-                'second_attributes': region_attributes.main.addClass('layout__region'),
-                'third': content.right_sidebar,
-                'third_attributes': region_attributes.right_sidebar.addClass('layout__region'),
-            } %}
-
-    {% endif %}
-{% elseif content.left_sidebar or content.right_sidebar %}
-    {% if content.left_sidebar %}
-        {% if settings.region_widths == 'equal' %}
-
-            {% include "@decanter/layout/flex/two-column/toucan/toucan.twig" with
-                {
-                    'attributes': attributes,
-                    'first': content.left_sidebar,
-                    'first_attributes': region_attributes.left_sidebar.addClass('layout__region'),
-                    'second': content.main,
-                    'second_attributes': region_attributes.main.addClass('layout__region'),
-                } %}
-
-        {% else %}
-
-            {% include "@decanter/layout/flex/two-column/pacman/pacman.twig" with
-                {
-                    'attributes': attributes,
-                    'sidebar': content.left_sidebar,
-                    'sidebar_attributes': region_attributes.left_sidebar.addClass('layout__region'),
-                    'content': content.main,
-                    'content_attributes': region_attributes.main.addClass('layout__region'),
-                } %}
-
-        {% endif %}
-    {% endif %}
-
-    {% if content.right_sidebar %}
-
-        {% include "@decanter/layout/flex/two-column/toucan/toucan.twig" with
-            {
-                'attributes': attributes,
-                'first': content.main,
-                'first_attributes': region_attributes.main.addClass('layout__region'),
-                'second': content.right_sidebar,
-                'second_attributes': region_attributes.right_sidebar.addClass('layout__region'),
-            } %}
-
-    {% endif %}
 {% else %}
 
+  {% set left_sidebar_attributes = region_attributes.left_sidebar.addClass(['flex-md-3-of-12', 'flex-lg-3-of-12', 'flex-xl-3-of-12', 'flex-2xl-3-of-12']) %}
+  {% set right_sidebar_attributes = region_attributes.right_sidebar.addClass(['flex-md-3-of-12', 'flex-lg-3-of-12', 'flex-xl-3-of-12', 'flex-2xl-3-of-12']) %}
 
-    {% include "@decanter/layout/flex/one-column/basic/basic.twig" with
-        {
-            'attributes': attributes,
-            'content': content.main,
-            'content_attributes': region_attributes.main.addClass('layout__region'),
-        } %}
+  {% if content.left_sidebar and content.right_sidebar %}
+    {% set main_attributes = main_attributes.addClass(['flex-md-6-of-12', 'flex-lg-6-of-12', 'flex-xl-6-of-12', 'flex-2xl-6-of-12']) %}
+  {% elseif content.left_sidebar or content.right_sidebar %}
+    {% set main_attributes = main_attributes.addClass(['flex-md-9-of-12', 'flex-lg-9-of-12', 'flex-xl-9-of-12', 'flex-2xl-9-of-12']) %}
+  {% endif %}
 
 {% endif %}
+
+
+<div{{ attributes.addClass('flex-container', settings.section_width) }}>
+  {% if content.left_sidebar %}
+    <aside{{ left_sidebar_attributes }}>
+      {{ content.left_sidebar }}
+    </aside>
+  {% endif %}
+
+  <section{{ main_attributes }}>
+    {{ content.main }}
+  </section>
+
+  {% if content.right_sidebar %}
+    <aside{{ right_sidebar_attributes }}>
+      {{ content.right_sidebar }}
+    </aside>
+  {% endif %}
+
+</div>

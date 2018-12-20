@@ -36,7 +36,7 @@ class HumsciLayout extends LayoutDefault implements PluginFormInterface {
       '#empty_option' => $this->t('Full Width'),
       '#default_value' => $this->configuration['section_width'] ?: NULL,
       '#options' => [
-        'centered-container' => $this->t('Limited Width'),
+        'decanter-grid' => $this->t('Limited Width'),
       ],
     ];
 
