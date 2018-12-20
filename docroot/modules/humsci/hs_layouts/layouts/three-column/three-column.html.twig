@@ -25,7 +25,7 @@
 {% endif %}
 
 
-<div{{ attributes.addClass('flex-container', settings.section_width) }}>
+<div{{ attributes.addClass(['flex-container', settings.section_width]) }}>
   {% if content.left_sidebar %}
     <aside{{ left_sidebar_attributes }}>
       {{ content.left_sidebar }}
