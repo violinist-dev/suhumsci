@@ -1,7 +1,8 @@
+{% set attributes = attributes.addClass(['centered-container', 'layout', settings.section_width]) %}
 
 {% if content.left_sidebar and content.right_sidebar %}
     {% if settings.region_widths == 'equal' %}
-        {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-bars']) %}
+        {% set attributes = attributes.addClass(['layout-bars']) %}
 
 
         {% include "@decanter/layout/grid/three-column/bars/bars.twig" with
@@ -16,7 +17,7 @@
             } %}
 
     {% else %}
-        {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-robot']) %}
+        {% set attributes = attributes.addClass(['layout-robot']) %}
 
         {% include "@decanter/layout/grid/three-column/robot/robot.twig" with
             {
@@ -33,7 +34,7 @@
 {% elseif content.left_sidebar or content.right_sidebar %}
     {% if content.left_sidebar %}
         {% if settings.region_widths == 'equal' %}
-            {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-toucan']) %}
+            {% set attributes = attributes.addClass(['layout-toucan']) %}
 
             {% include "@decanter/layout/grid/two-column/toucan/toucan.twig" with
                 {
@@ -45,7 +46,7 @@
                 } %}
 
         {% else %}
-            {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-pacman']) %}
+            {% set attributes = attributes.addClass(['layout-pacman']) %}
 
 
             {% include "@decanter/layout/grid/two-column/pacman/pacman.twig" with
@@ -61,7 +62,7 @@
     {% endif %}
 
     {% if content.right_sidebar %}
-        {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-toucan']) %}
+        {% set attributes = attributes.addClass(['layout-toucan']) %}
 
         {% include "@decanter/layout/grid/two-column/toucan/toucan.twig" with
             {
@@ -74,7 +75,7 @@
 
     {% endif %}
 {% else %}
-    {% set attributes = attributes.addClass(['centered-container', 'layout', 'layout-basic']) %}
+    {% set attributes = attributes.addClass(['layout-basic']) %}
 
     {% include "@decanter/layout/grid/one-column/basic/basic.twig" with
         {
