@@ -11,16 +11,21 @@ use Consolidation\AnnotatedCommand\CommandData;
 class HumsciHook extends BltTasks {
 
   /**
-   * Log in when drupal:sync finishes.
+   * Disables saml & log in when drupal:sync finishes.
    *
    * @hook post-command drupal:sync
    */
   public function postDrupalSync($result, CommandData $commandData) {
+    $this->taskDrush()
+      ->drush('pmu')
+      ->arg('simplesamlphp_auth')
+      ->option('yes')
+      ->run();
     $this->taskDrush()->drush('uli')->run();
   }
 
   /**
-   * Toggle modules first
+   * Toggle modules first.
    *
    * @hook pre-command drupal:config:import
    */
@@ -35,10 +40,15 @@ class HumsciHook extends BltTasks {
    */
   public function postConfigImport() {
     $this->yell('Importing new form and display configuration items that don\'t exist in the database because they are ignored in config.ignore');
-    $result = $this->taskDrush()->drush('config-missing-report')->args([
-      'type',
-      'system.all',
-    ])->option('format', 'string')->run();
+    $result = $this->taskDrush()
+      ->drush('config-missing-report')
+      ->args([
+        'type',
+        'system.all',
+      ])
+      ->option('format', 'string')
+      ->printOutput(FALSE)
+      ->run();
     $configs = array_filter(explode("\n", $result->getMessage()));
 
     // Since we ignore all the entity form and entity display configs, drush cim
@@ -56,7 +66,7 @@ class HumsciHook extends BltTasks {
    *
    * @hook post-command recipes:multisite:init
    */
-  public function postMultisite() {
+  public function postMultisite($result, CommandData $data) {
     $add_domain = $this->askDefault('Would you like to add domains at this time?', 'y');
     if (strtolower($add_domain[0]) == 'y') {
       $this->invokeCommand('humsci:add-domain');

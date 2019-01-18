@@ -23,7 +23,35 @@
     @include card;
 
     .vertical-card__title {
+      font-size: 3rem;
+
       @include margin(0 null null);
     }
+
+    > *:last-child > *:last-child {
+      @include margin(null null 0 null);
+    }
+  }
+
+  .vertical-card__author-year {
+    > div {
+      display: inline-block;
+    }
+
+    .vertical-card__author-year--author {
+      font-weight: $font-normal;
+    }
+
+    .vertical-card__author-year--year {
+      font-weight: $font-light;
+    }
+
+    .comma {
+      @include margin(null null null -3px);
+    }
+  }
+
+  > * {
+    word-break: break-word;
   }
 }

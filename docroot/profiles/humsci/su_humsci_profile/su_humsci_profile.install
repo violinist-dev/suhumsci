@@ -9,6 +9,11 @@ use Drupal\user\Entity\User;
 use Drupal\user\RoleInterface;
 use Drupal\shortcut\Entity\Shortcut;
 use Drupal\Core\Config\FileStorage;
+use Drupal\user\Entity\Role;
+use Drupal\layout_builder\Plugin\SectionStorage\OverridesSectionStorage;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\layout_builder\Entity\LayoutBuilderEntityViewDisplay;
+use Drupal\node\Entity\Node;
 
 /**
  * Implements hook_install().
@@ -16,8 +21,25 @@ use Drupal\Core\Config\FileStorage;
 function su_humsci_profile_install() {
   // Assign user 1 the "administrator" role.
   $user = User::load(1);
+  $user->name = 'sws-developers';
   $user->roles[] = 'administrator';
   $user->save();
+
+  User::create([
+    'name' => 'Howard',
+    'password' => user_password(),
+    'email' => 'sws-developers+howard@lists.stanford.edu',
+    'roles' => ['site_manager'],
+    'status' => 1,
+  ])->save();
+
+  User::create([
+    'name' => 'Lindsey',
+    'password' => user_password(),
+    'email' => 'sws-developers+lindsey@lists.stanford.edu',
+    'roles' => ['contributor'],
+    'status' => 1,
+  ])->save();
 
   // We install some menu links, so we have to rebuild the router, to ensure the
   // menu links are valid.
@@ -112,4 +134,152 @@ function su_humsci_profile_update_8004() {
     ->fields(['expire' => 0])
     ->condition('collection', 'tempstore.shared.layout_builder.sample_entity')
     ->execute();
+}
+
+/**
+ * Create CI Config Split settings.
+ */
+function su_humsci_profile_update_8005() {
+  $source = new FileStorage('../config/default');
+  /** @var \Drupal\Core\Config\CachedStorage $config_storage */
+  $config_storage = \Drupal::service('config.storage');
+  $config_storage->write('config_split.config_split.ci', $source->read('config_split.config_split.ci'));
+}
+
+/**
+ * Update config ignore settings.
+ */
+function su_humsci_profile_update_8006() {
+  $config = \Drupal::configFactory()->getEditable('config_ignore.settings');
+  if ($ignored_entities = $config->get('ignored_config_entities')) {
+    $ignored_entities[] = 'user.role.*:permissions';
+    $config->set('ignored_config_entities', $ignored_entities);
+    $config->save();
+  }
+}
+
+/**
+ * Give site managers permission to view user list.
+ */
+function su_humsci_profile_update_8007() {
+  $site_manager = Role::load('site_manager');
+  $site_manager->grantPermission('view user list');
+  $site_manager->save();
+}
+
+/**
+ * Add view status to config ignore.
+ */
+function su_humsci_profile_update_8008() {
+  $config = \Drupal::configFactory()->getEditable('config_ignore.settings');
+  if ($ignored_entities = $config->get('ignored_config_entities')) {
+    $ignored_entities[] = 'views.view.hs_*:status';
+    $config->set('ignored_config_entities', $ignored_entities);
+    $config->save();
+  }
+}
+
+/**
+ * Reset config ignore settings.
+ */
+function su_humsci_profile_update_8009() {
+  $source = new FileStorage('../config/default');
+  /** @var \Drupal\Core\Config\CachedStorage $config_storage */
+  $config_storage = \Drupal::service('config.storage');
+  $name = 'config_ignore.settings';
+  $config_storage->write($name, $source->read($name));
+}
+
+/**
+ * Fix menu block configurations.
+ */
+function su_humsci_profile_update_8010() {
+  // Fix content type display modes.
+  /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display */
+  foreach (EntityViewDisplay::loadMultiple() as $display) {
+    if ($display instanceof LayoutBuilderEntityViewDisplay && $display->isLayoutBuilderEnabled()) {
+
+      if (_su_humsci_profile_update_fix_menuposition_sections($display->getSections())) {
+        $display->save();
+      }
+    }
+  }
+
+  // Fix node overrides that might exist.
+  $nids = \Drupal::entityQuery('node')
+    ->condition(OverridesSectionStorage::FIELD_NAME, '', '<>')
+    ->execute();
+
+  /** @var \Drupal\node\NodeInterface $node */
+  foreach (Node::loadMultiple($nids) as $node) {
+    /** @var \Drupal\layout_builder\Field\LayoutSectionItemList $section_list */
+    $section_list = $node->get(OverridesSectionStorage::FIELD_NAME);
+
+    if (_su_humsci_profile_update_fix_menuposition_sections($section_list->getSections())) {
+      $node->save();
+    }
+  }
+}
+
+/**
+ * Fix menu block configurations for nodes.
+ *
+ * This function has an underscore at the beginning to prevent it from running
+ * until we decide it necessary.
+ */
+function _su_humsci_profile_update_8011() {
+  // Fix node overrides that might exist.
+  $nids = \Drupal::entityQuery('node')
+    ->condition(OverridesSectionStorage::FIELD_NAME, '', '<>')
+    ->execute();
+
+  /** @var \Drupal\node\NodeInterface $node */
+  foreach (Node::loadMultiple($nids) as $node) {
+    /** @var \Drupal\layout_builder\Field\LayoutSectionItemList $section_list */
+    $section_list = $node->get(OverridesSectionStorage::FIELD_NAME);
+
+    if (_su_humsci_profile_update_fix_menuposition_sections($section_list->getSections())) {
+      $node->save();
+    }
+  }
+}
+
+/**
+ * Loop through layout builder sections and fix menu block configurations.
+ *
+ * @param \Drupal\layout_builder\Section[] $sections
+ *   Array of sections.
+ *
+ * @return bool
+ *   If anything was changed in the any component.
+ */
+function _su_humsci_profile_update_fix_menuposition_sections(array $sections) {
+  $changed = FALSE;
+  foreach ($sections as $section) {
+    foreach ($section->getComponents() as $component) {
+
+      try {
+        $plugin_id = $component->getPluginId();
+      }
+      catch (Exception $e) {
+
+        \Drupal::logger('humsci_profile')
+          ->error('Error during update for component @uuid: @message', [
+            '@uuid' => $component->getUuid(),
+            '@message' => $e->getMessage(),
+          ]);
+        continue;
+      }
+      if ($plugin_id == 'menu_block:main') {
+        $config = $component->get('configuration');
+        $config['follow'] = 0;
+        $config['follow_parent'] = 'active';
+        $config['level'] = 2;
+        $config['expand'] = TRUE;
+        $component->setConfiguration($config);
+        $changed = TRUE;
+      }
+    }
+  }
+  return $changed;
 }

@@ -1,0 +1,21 @@
+uuid: e9fc7cc8-b5b0-4202-b1c2-c2e07e33fba1
+langcode: en
+status: false
+dependencies: {  }
+id: ci
+label: Ci
+description: 'CircleCi Environment'
+folder: ../config/envs/ci
+module:
+  hs_bugherd: 0
+  hs_config_readonly: 0
+  config_readonly: 0
+theme: {  }
+blacklist:
+  - rest.resource.hs_bugherd_resource
+  - rest.resource.hs_bugherd_resource_bugherd
+  - rest.resource.hs_bugherd_resource_jira
+graylist: {  }
+graylist_dependents: true
+graylist_skip_equal: true
+weight: 0

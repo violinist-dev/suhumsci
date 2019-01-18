@@ -2,33 +2,39 @@
 
 //
 // Decanter Overrides
+// These styles should eventually be moved to the Decanter project and removed
+// from this file/project.
 //
 
 // Decanter
 @import
   'decanter-no-markup';
 
+// Primary and secondary button overrides
+// Optical alignment adjunstment
+.decanter-button,
+.decanter-button--secondary {
+  @include padding(1rem 2rem 1.5rem 2rem);
+}
+
+// Primary button overrides
+// The hover state of the button text needs fixing
+.decanter-button a:hover,
+.decanter-button a:focus,
+.decanter-button a:active {
+  color: $color-white;
+}
+
 // Secondary button overrides
 // The button-secondary mixin should be modified
 .decanter-button--secondary {
-  display: inline-block;
+  font-weight: $font-normal;
 
-  @include padding(0);
-  @include margin(0.25em calc(.5em - 4px) 0.25em 0);
+  @include margin(null 0.2rem null null);
 
   a {
-    display: block;
-    font-weight: $font-normal;
     text-decoration: none;
-
-    @include padding(0.4em 0.65em 0.45em);
   }
-}
-
-// Heading overrides
-// The margins on headings should be modified
-h1:first-child {
-  @include margin(0 null null);
 }
 
 .no-wrap {

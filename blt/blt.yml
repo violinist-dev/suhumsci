@@ -6,28 +6,33 @@ project:
     name: suhumsci
   local: {  }
 git:
-  default_branch: develop
+  default_branch: develop-build
   remotes:
     - 'swshumsci@svn-4786.devcloud.hosting.acquia.com:swshumsci.git'
+deploy:
+  tag_source: true
+  exclude_file: '${repo.root}/blt/deploy/rsync-exclude.txt'
+  gitignore_file: '${repo.root}/blt/deploy/.gitignore'
 drush:
   aliases:
     remote: '${project.machine_name}.test'
     local: self
     ci: self
+    prod: '${project.machine_name}.prod'
   default_alias: '${drush.aliases.local}'
 modules:
   local:
-    enable: [dblog, devel, devel_debug_log, devel_generate, seckit, views_ui]
-    uninstall: [acquia_connector, simplesamlphp_auth, shield, config_readonly, config_ignore]
+    enable: [dblog, devel, devel_debug_log, devel_generate, seckit, views_ui, config_import_de]
+    uninstall: [acquia_connector, purge, simplesamlphp_auth, shield, config_readonly, hs_bugherd]
   ci:
-    enable: {  }
-    uninstall: [acquia_connector, shield]
+    enable: [hs_config_readonly, hs_bugherd]
+    uninstall: [purge, acquia_connector, shield, simplesamlphp_auth]
   dev:
-    enable: [acquia_connector, shield]
-    uninstall: [config_readonly, bugherdapi, config_ignore]
+    enable: [acquia_connector, shield, config_import_de]
+    uninstall: [config_readonly, hs_bugherd]
   test:
     enable: [acquia_connector, shield]
-    uninstall: [config_readonly, bugherdapi]
+    uninstall: [config_readonly, hs_bugherd]
   prod:
     enable: [acquia_connector, hs_config_readonly, hs_bugherd]
     uninstall: [shield]
@@ -37,10 +42,10 @@ multisites:
   - mrc
   - francestanford
   - swshumsci_sandbox
+  - symsys
+  - mathematics
+  - philit
 simplesamlphp: true
-deploy:
-  exclude_file: '${repo.root}/blt/deploy/rsync-exclude.txt'
-  gitignore_file: '${repo.root}/blt/deploy/.gitignore'
 command-hooks:
   post-deploy-build:
     dir: '${deploy.dir}'
@@ -48,12 +53,10 @@ command-hooks:
 cm:
   strategy: config-split
   allow-overrides: true
-# For some reason, sometimes BLT changes the docroot/sites/sites.php file. We add these dummy commands to
-# change the first two commands during the sync command to prevent unwanted changes.
 sync:
   commands:
-    - custom:hello
-    - custom:hello
+    - 'custom:hello'
+    - 'custom:hello'
 key-dir:
   dev: /mnt/gfs/swshumsci.dev/nobackup/apikeys
   test: /mnt/gfs/swshumsci.test/nobackup/apikeys

@@ -5,6 +5,7 @@ namespace Drupal\hs_courses_importer\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use GuzzleHttp\ClientInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -20,6 +21,15 @@ class CoursesController extends ControllerBase {
   protected $httpClient;
 
   /**
+   * Request stack service.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
+   * Courses Dom Document.
+   *
    * @var \DOMDocument
    */
   protected $courseDom;
@@ -27,8 +37,9 @@ class CoursesController extends ControllerBase {
   /**
    * Constructs a new CoursesController object.
    */
-  public function __construct(ClientInterface $http_client) {
+  public function __construct(ClientInterface $http_client, RequestStack $request_stack) {
     $this->httpClient = $http_client;
+    $this->requestStack = $request_stack;
     $this->courseDom = new \DOMDocument('1.0', 'UTF-8');
     $this->setCourseDom();
   }
@@ -38,19 +49,20 @@ class CoursesController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('http_client')
+      $container->get('http_client'),
+      $container->get('request_stack')
     );
   }
 
   /**
-   * Getcourses.
+   * Get courses xml data.
    *
-   * @return string
-   *   Return Hello string.
+   * @return \Symfony\Component\HttpFoundation\Response
+   *   Xml response.
    */
   public function courses() {
     $response = new Response();
-    $response->setMaxAge(360);
+    $response->setMaxAge(0);
     $response->headers->set('Content-Type', 'text/xml');
     $response->setContent($this->courseDom->saveXML());
     return $response;
@@ -62,10 +74,9 @@ class CoursesController extends ControllerBase {
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
   protected function setCourseDom() {
-    $url = 'http://explorecourses.stanford.edu/search?view=xml-20140630&view=catalog-20140630&filter-coursestatus-Active=on&page=0&catalog=&academicYear=&q=ARCHLGY%3A';
-    $config = $this->config('hs_courses_importer.importer_settings');
-    if ($config_url = $config->get('url')) {
-      $url = $config_url;
+    $url = $this->requestStack->getCurrentRequest()->get('feed');
+    if (!$url) {
+      return [];
     }
 
     $api_response = $this->httpClient->request('GET', $url);
@@ -77,8 +88,8 @@ class CoursesController extends ControllerBase {
     $body = preg_replace("/[[:blank:]]+/", " ", $body);
     $body = str_replace('> ', ">", $body);
     $body = str_replace(' <', "<", $body);
-    $this->courseDom->loadXML($body);
 
+    $this->courseDom->loadXML($body);
     $this->cleanCourses();
     $this->setSectionGuids();
   }
@@ -98,7 +109,7 @@ class CoursesController extends ControllerBase {
     foreach ($remove_nodes as $node) {
       $elements = $xpath->query("//$node");
       foreach ($elements as $element) {
-        // This is a hint from the manual comments
+        // This is a hint from the manual comments.
         $element->parentNode->removeChild($element);
       }
     }
@@ -113,10 +124,10 @@ class CoursesController extends ControllerBase {
    */
   protected function setSectionGuids() {
     $xpath = new \DOMXPath($this->courseDom);
-    /** @var \SimpleXMLElement $all_sections [] */
+    /* @var \SimpleXMLElement $all_sections [] */
     $all_sections = $xpath->query('//sections');
 
-    /** @var \DOMElement $course_sections */
+    /* @var \DOMElement $course_sections */
     foreach ($all_sections as $course_sections) {
       // Courses that have no sections, we'll add an empty section just for the
       // guid.
@@ -126,14 +137,22 @@ class CoursesController extends ControllerBase {
       }
 
       // Build the guid parts.
-      $course_id = $xpath->query('../administrativeInformation/courseId', $course_sections)[0]->textContent;
-      $code = $xpath->query('../code', $course_sections)[0]->textContent;
+      $course_id_element = $xpath->query('../administrativeInformation/courseId', $course_sections);
+      $course_id = '000';
 
-      /** @var \DOMElement $section */
+      // Some XML feeds from explore courses don't have the courseId element.
+      // So we need to check for its existence.
+      if ($course_id_element->length) {
+        $course_id = $course_id_element->item(0)->textContent;
+      }
+      $code = $xpath->query('../code', $course_sections)->item(0)->textContent;
+
+      /* @var \DOMElement $section */
       foreach ($xpath->query('section', $course_sections) as $section) {
         $guid = "$course_id-$code";
         if ($xpath->query('classId', $section)->length) {
-          $guid .= '-' . $xpath->query('classId', $section)[0]->textContent;
+          $class_id = $xpath->query('classId', $section)->item(0)->textContent;
+          $guid .= "-$class_id";
         }
         $guid = new \DOMElement('guid', $guid);
         $section->appendChild($guid);

@@ -18,6 +18,8 @@
   '../../../../scss/utilities/mixins/mixins';
 
 .mrc-postcard--horizontal {
+  overflow: hidden;
+
   @include margin(null null 2em);
   @include mrc-card-container;
 

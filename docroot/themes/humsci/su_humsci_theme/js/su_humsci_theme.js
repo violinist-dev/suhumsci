@@ -35,6 +35,11 @@
       }
 
       window.addEventListener('keydown', handleFirstTab);
+      $('figure', context).each(function(i, figure){
+        $(figure).imagesLoaded(function(){
+          $(figure).find('figcaption, picture').css('max-width', $(figure).find('img').width());
+        });
+      })
     }
   };
 })(jQuery, Drupal);

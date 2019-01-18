@@ -18,13 +18,52 @@ use Drupal\Core\Field\FormatterInterface;
 use Drupal\layout_builder\Entity\LayoutBuilderEntityViewDisplay;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\ui_patterns\UiPatterns;
-use Drupal\migrate\Exception\RequirementsException;
-use Drupal\migrate\Plugin\RequirementsInterface;
-use Drupal\migrate\Plugin\MigrationInterface;
-use Drupal\migrate_tools\MigrateExecutable;
-use Drupal\migrate\MigrateMessage;
 use Drupal\ui_patterns\Element\PatternContext;
 use Drupal\eck\Entity\EckEntity;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Component\Utility\UrlHelper;
+use Drupal\views\ViewExecutable;
+use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\hs_field_helpers\Plugin\views\query\Sql as HsViewsSql;
+use Drupal\Component\Utility\Html;
+use Drupal\field\FieldStorageConfigInterface;
+use Drupal\field_permissions\Plugin\FieldPermissionTypeInterface;
+
+/**
+ * Implements hook_views_plugins_query_alter().
+ */
+function hs_field_helpers_views_plugins_query_alter(&$definitions) {
+  $definitions['views_query']['class'] = HsViewsSql::class;
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function hs_field_helpers_views_query_alter(ViewExecutable $view, QueryPluginBase $query) {
+  if ($query instanceof HsViewsSql) {
+    $query->alterQuery($view);
+  }
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function hs_field_helpers_views_data_alter(array &$data) {
+  /** @var \Drupal\field\Entity\FieldStorageConfig $field_storage */
+  foreach (FieldStorageConfig::loadMultiple() as $field_storage) {
+    if ($field_storage->getType() != 'datetime') {
+      continue;
+    }
+    $entity_type = $field_storage->getTargetEntityTypeId();
+    $field_name = $field_storage->getName();
+
+    // Change the filter id to our custom filter. This will give us an optional
+    // exception window for academic calendars.
+    $value_data = &$data["{$entity_type}__{$field_name}"]["{$field_name}_value"];
+    $value_data['filter']['id'] = 'academic_datetime';
+  }
+}
 
 /**
  * Implements hook_form_FORM_ID_alter().
@@ -52,7 +91,7 @@ function hs_field_helpers_help($route_name, RouteMatchInterface $route_match) {
     return;
   }
 
-  /** @var FieldConfig $field */
+  /** @var \Drupal\field\Entity\FieldConfig $field */
   foreach (FieldConfig::loadMultiple() as $field) {
     if ($field->getType() != 'display_mode_field') {
       continue;
@@ -114,27 +153,36 @@ function hs_field_helpers_preprocess(&$variables, $hook) {
   // Layout Builder cleanup.
   // Each layout has its own preprocess hook. So we have to use generic hook.
   if (isset($variables['layout']) && $variables['layout'] instanceof LayoutDefinition) {
+    hs_fields_helpers_cleanup_layout_builder($variables);
+  }
+}
 
-    // This attribute exists when on the layout management page. We don't want
-    // to clean up the regions when on that page because it will break the UI.
-    if (!empty($variables['attributes']['data-layout-update-url'])) {
-      return;
+/**
+ * Helper function to clean up empty layout builder regions.
+ *
+ * @param array $variables
+ *   Preprocess variables.
+ */
+function hs_fields_helpers_cleanup_layout_builder(array &$variables) {
+  // This attribute exists when on the layout management page. We don't want
+  // to clean up the regions when on that page because it will break the UI.
+  if (!empty($variables['attributes']['data-layout-update-url'])) {
+    return;
+  }
+  foreach (Element::children($variables['content']) as $region) {
+
+    // Some blocks such as a menu block don't have any output, but the layout
+    // still outputs an empty container for the block that has no content.
+    // So lets find out if they are empty, and clean them up.
+    foreach (Element::children($variables['content'][$region]) as $item_id) {
+      if (empty($variables['content'][$region][$item_id]['#theme'])) {
+        unset($variables['content'][$region][$item_id]);
+      }
     }
-    foreach (Element::children($variables['content']) as $region) {
 
-      // Some blocks such as a menu block don't have any output, but the layout
-      // still outputs an empty container for the block that has no content.
-      // So lets find out if they are empty, and clean them up.
-      foreach (Element::children($variables['content'][$region]) as $item_id) {
-        if (empty($variables['content'][$region][$item_id]['#theme'])) {
-          unset($variables['content'][$region][$item_id]);
-        }
-      }
-
-      // Clean up empty regions after we've cleaned up the blocks in the region.
-      if (empty(Element::children($variables['content'][$region]))) {
-        unset($variables['content'][$region]);
-      }
+    // Clean up empty regions after we've cleaned up the blocks in the region.
+    if (empty(Element::children($variables['content'][$region]))) {
+      unset($variables['content'][$region]);
     }
   }
 }
@@ -144,7 +192,7 @@ function hs_field_helpers_preprocess(&$variables, $hook) {
  *
  * @param array $pattern
  *   Pattern render array.
- * @param $pattern_id
+ * @param string $pattern_id
  *   Pattern ID being used.
  */
 function _hs_field_helpers_cleanup_pattern_regions(array &$pattern, $pattern_id) {
@@ -157,6 +205,16 @@ function _hs_field_helpers_cleanup_pattern_regions(array &$pattern, $pattern_id)
   }
   foreach (array_keys($pattern_definition->getFieldsAsOptions()) as $region) {
     if (empty($pattern[$region]) || !is_array($pattern[$region]) || isset($pattern[$region]['#theme'])) {
+      $rendered = render($pattern[$region]);
+
+      // Remove all wrapper divs so we can check if the region actually has any
+      // visible output.
+      $rendered = preg_replace("/<div.*?>(.*?)<\/div>/s", "$1", $rendered);
+      $rendered = preg_replace("/<div>(.*?)<\/div>/s", "$1", $rendered);
+      if (empty(trim($rendered))) {
+        unset($pattern[$region]);
+      }
+
       continue;
     }
     if (!_hs_field_helpers_render_array_has_content($pattern[$region])) {
@@ -275,24 +333,51 @@ function hs_field_helpers_field_widget_form_alter(&$element, FormStateInterface 
       array_unshift($element['#element_validate'], 'hs_field_helpers_node_validate_date');
 
       break;
+
+    case 'link_default':
+      $element['uri']['#element_validate'][] = 'hs_field_helpers_validate_link_uri';
+      break;
   }
   $element['#attached']['library'][] = 'hs_field_helpers/admin';
+}
+
+/**
+ * Modify the link field's url entry to decode local urls.
+ *
+ * @param array $element
+ *   Url text form element.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   Current form state.
+ * @param array $form
+ *   Complete form.
+ */
+function hs_field_helpers_validate_link_uri(array &$element, FormStateInterface $form_state, array $form) {
+  if (strpos($element['#value'], '/') === 0) {
+    $form_state->setValueForElement($element, urldecode($element['#value']));
+  }
 }
 
 /**
  * Validation for event dates in nodes form.
  */
 function hs_field_helpers_node_validate_date(array &$element, FormStateInterface $form_state) {
-  $date = $form_state->getValue('field_hs_event_date');
+  /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
+  $entity = $form_state->getBuildInfo()['callback_object']->getEntity();
 
-  // If the start value is populated but end is empty, copy the start date
-  // to the end date to pass validation.
-  if (!empty($date[0]['value']) && (!$date[0]['show_end'] || empty($date[0]['end_value']))) {
-    $date[0]['end_value'] = $date[0]['value'];
-    $element['end_value']['#value']['object'] = $date[0]['end_value'];
+  foreach ($entity->getFieldDefinitions() as $field_definition) {
+    if ($field_definition->getType() == 'daterange') {
+      $date = $form_state->getValue($field_definition->getName());
 
-    /** @var \Drupal\Core\Datetime\DrupalDateTime $date */
-    $form_state->setValue('field_hs_event_date', $date);
+      // If the start value is populated but end is empty, copy the start date
+      // to the end date to pass validation.
+      if (!empty($date[0]['value']) && (!$date[0]['show_end'] || empty($date[0]['end_value']))) {
+        $date[0]['end_value'] = $date[0]['value'];
+        $element['end_value']['#value']['object'] = $date[0]['end_value'];
+
+        /** @var \Drupal\Core\Datetime\DrupalDateTime $date */
+        $form_state->setValue($field_definition->getName(), $date);
+      }
+    }
   }
 }
 
@@ -337,7 +422,7 @@ function hs_field_helpers_field_formatter_third_party_settings_form(FormatterInt
  * The field_formatter_class module doesn't work on layout builder fields, so we
  * have to add our classes on our own.
  *
- * @see field_formatter_class_preprocess_field().
+ * @see field_formatter_class_preprocess_field()
  */
 function hs_field_helpers_preprocess_field(&$variables) {
   // Get a few convenient handles.
@@ -345,13 +430,16 @@ function hs_field_helpers_preprocess_field(&$variables) {
   $field_name = $variables['element']['#field_name'];
   $view_mode = $variables['element']['#view_mode'];
   $field_config = _hs_field_helpers_get_view_mode_component($entity, $view_mode, $field_name);
-  // A user can customize a field label in the layout builder but it doesn't
-  // get moved to the field level.
-  $variables['label'] = $field_config['label'] ?? $variables['label'];
 
   // Add class for whole field.
   if (!empty($field_config['formatter']['third_party_settings']['field_formatter_class'])) {
-    $variables['attributes']['class'][] = $field_config['formatter']['third_party_settings']['field_formatter_class']['class'];
+    $class = $field_config['formatter']['third_party_settings']['field_formatter_class']['class'];
+
+    /** @var \Drupal\Core\Entity\EntityInterface $object */
+    $object = $variables['element']['#object'];
+    $class = \Drupal::service('token')
+      ->replace($class, [$object->getEntityTypeId() => $object], ['clear' => TRUE]);
+    $variables['attributes']['class'][] = Html::cleanCssIdentifier($class);
   }
 }
 
@@ -363,15 +451,18 @@ function hs_field_helpers_preprocess_field(&$variables) {
  */
 function hs_field_helpers_theme_suggestions_field(array $variables) {
   // Get a few convenient handles.
-  /** @var FieldableEntityInterface $entity */
+  /** @var \Drupal\Core\Entity\FieldableEntityInterface $entity */
   $entity = $variables['element']['#object'];
   $field_name = $variables['element']['#field_name'];
   $view_mode = $variables['element']['#view_mode'];
   $field_config = _hs_field_helpers_get_view_mode_component($entity, $view_mode, $field_name);
 
   $suggestions = [];
-  //  // Add class for whole field.
-  if (!empty($field_config['formatter']['third_party_settings']['hs_field_helpers']) && $field_config['formatter']['third_party_settings']['hs_field_helpers']['inline_contents']) {
+  // Add class for whole field.
+  if (
+    !empty($field_config['formatter']['third_party_settings']['hs_field_helpers'])
+    && $field_config['formatter']['third_party_settings']['hs_field_helpers']['inline_contents']
+  ) {
     $entity_type = $entity->getEntityTypeId();
     $suggestions = [
       'field__inline_contents',
@@ -385,7 +476,7 @@ function hs_field_helpers_theme_suggestions_field(array $variables) {
 /**
  * A field can be nested in a layout builder section, so lets go get it.
  *
- * @param EntityInterface $entity
+ * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
  *   The entity in question.
  * @param string $view_mode
  *   View mode to build.
@@ -395,7 +486,8 @@ function hs_field_helpers_theme_suggestions_field(array $variables) {
  * @return array|null
  *   Formatter settings of the field if found.
  */
-function _hs_field_helpers_get_view_mode_component(EntityInterface $entity, $view_mode, $field_name) {
+function _hs_field_helpers_get_view_mode_component(FieldableEntityInterface $entity, $view_mode, $field_name) {
+  /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $entity_display */
   $entity_display = EntityViewDisplay::collectRenderDisplay($entity, $view_mode);
 
   $entity_type = $entity_display->getTargetEntityTypeId();
@@ -403,55 +495,28 @@ function _hs_field_helpers_get_view_mode_component(EntityInterface $entity, $vie
   $id = "field_block:$entity_type:$entity_bundle:$field_name";
   $static_id = "$id-{$entity->id()}";
   $builds = &drupal_static(__FUNCTION__);
+
+  // We've already found the field component, return that.
   if (isset($builds[$static_id])) {
     return $builds[$static_id];
   }
 
-  $render_build = $entity_display->build($entity);
-  if (!($entity_display instanceof LayoutBuilderEntityViewDisplay) || !isset($render_build['_layout_builder'])) {
-    return [];
+  if (!($entity_display instanceof LayoutBuilderEntityViewDisplay) || !$entity_display->isLayoutBuilderEnabled()) {
+    // If the entity is not using layout builder, we can simply get the
+    // component. We use the key formatter to make it identical to the way
+    // layout builder has the configurations array.
+    return ['formatter' => $entity_display->getComponent($field_name)];
   }
 
-  foreach ($render_build['_layout_builder'] as $section) {
-    foreach (Element::children($section) as $region_id) {
-      foreach ($section[$region_id] as $component) {
-        if (isset($component['#plugin_id']) && $component['#plugin_id'] == $id) {
-          $builds[$static_id] = $component['#configuration'];
-          return $component['#configuration'];
-        }
-      }
-    }
-  }
-}
-
-/**
- * Implements hook_entity_delete().
- *
- * When an entity is manually deleted from the database, we want to remove it
- * from the migration mapping.
- */
-function hs_field_helpers_entity_delete(EntityInterface $entity) {
-  $database = \Drupal::database();
-  /** @var \Drupal\migrate\Plugin\MigrationPluginManager $manager */
-  $manager = \Drupal::service('plugin.manager.migration');
-  $migrations = $manager->createInstances([]);
-
-  /** @var \Drupal\migrate_plus\Entity\Migration $migration */
-  foreach ($migrations as $migration) {
-    $destination = $migration->get('destination');
-
-    if (isset($destination['plugin']) && strpos($destination['plugin'], 'entity:') !== FALSE) {
-      list(, $type) = explode(':', $destination['plugin']);
-
-      if ($type == $entity->getEntityTypeId()) {
-        $table = 'migrate_map_' . $migration->id();
-
-        if ($database->schema()->tableExists($table)) {
-          $database->delete($table)
-            ->condition('destid1', $entity->id())
-            ->execute();
-        }
-        return;
+  // Dive into the layout builder sections to find the component we need.
+  /** @var \Drupal\layout_builder\Section $section */
+  foreach ($entity_display->getSections() as $section) {
+    /** @var \Drupal\layout_builder\SectionComponent $component */
+    foreach ($section->getComponents() as $component) {
+      $component_config = $component->get('configuration');
+      if ($component_config['id'] == $id) {
+        $builds[$static_id] = $component_config;
+        return $component_config;
       }
     }
   }
@@ -461,14 +526,6 @@ function hs_field_helpers_entity_delete(EntityInterface $entity) {
  * Implements hook_cron().
  */
 function hs_field_helpers_cron() {
-  if (\Drupal::moduleHandler()->moduleExists('migrate')) {
-    $migrations = hs_field_helpers_migration_list();
-    // Take it one group at a time, importing the migrations within each group.
-    foreach ($migrations as $group_id => $migration_list) {
-      array_walk($migration_list, 'hs_field_helpers_execute_migration');
-    }
-  }
-
   _he_field_helpers_clean_eck();
 }
 
@@ -516,75 +573,79 @@ function _he_field_helpers_clean_eck() {
 }
 
 /**
- * Retrieve a list of active migrations, partially taken from migrate_tools.
- *
- * @return MigrationInterface[][]
- *   An array keyed by migration group, each value containing an array of
- *   migrations or an empty array if no migrations match the input criteria.
- *
- * @see \Drupal\migrate_tools\Commands\MigrateToolsCommands::migrationsList()
+ * Implements hook_form_FORM_ID_alter().
  */
-function hs_field_helpers_migration_list() {
-  $manager = \Drupal::service('plugin.manager.migration');
-  $matched_migrations = $manager->createInstances([]);
-
-  // Do not return any migrations which fail to meet requirements.
-  /** @var \Drupal\migrate\Plugin\Migration $migration */
-  foreach ($matched_migrations as $id => $migration) {
-    if ($migration->getSourcePlugin() instanceof RequirementsInterface) {
-      try {
-        $migration->getSourcePlugin()->checkRequirements();
-      }
-      catch (RequirementsException $e) {
-        unset($matched_migrations[$id]);
-      }
-    }
+function hs_field_helpers_form_views_exposed_form_alter(&$form, FormStateInterface $form_state) {
+  if (empty($form['actions']['reset'])) {
+    return;
   }
 
-  // Sort the matched migrations by group.
-  if (!empty($matched_migrations)) {
-    foreach ($matched_migrations as $id => $migration) {
-      $configured_group_id = empty($migration->get('migration_group')) ? 'default' : $migration->get('migration_group');
-      $migrations[$configured_group_id][$id] = $migration;
-    }
-  }
-  return isset($migrations) ? $migrations : [];
+  // Ajax blocks using the module views_block_filter_block do not display the
+  // "Reset" button after the form has been submitted. So we are going to change
+  // the access and apply some javascript to help keep the ajaxy feel.
+  $form['actions']['reset']['#access'] = TRUE;
+  $form['#attached']['library'][] = 'hs_field_helpers/views_reset';
 }
 
 /**
- * Executes a single migration, taken from drush command in migrate_tools.
- *
- * @param \Drupal\migrate\Plugin\MigrationInterface $migration
- *  The migration to execute.
- * @param string $migration_id
- *  The migration ID (not used, just an artifact of array_walk()).
- *
- * @throws \Drupal\migrate\MigrateException
- *
- * @see \Drupal\migrate_tools\Commands\MigrateToolsCommands::executeMigration()
+ * Implements hook_ENTITY_TYPE_presave().
  */
-function hs_field_helpers_execute_migration(MigrationInterface $migration, $migration_id, $options = []) {
-  // Keep track of all migrations run during this command so the same
-  // migration is not run multiple times.
-  static $executed_migrations = [];
+function hs_field_helpers_node_presave(EntityInterface $entity) {
+  $rabbit_hole = \Drupal::config('rabbit_hole.behavior_settings.node_type_' . $entity->bundle());
 
-  // Execute all the required migrations first before running this one.
-  $required_migrations = $migration->get('requirements');
-  $required_migrations = array_filter($required_migrations, function ($value) use ($executed_migrations) {
-    return !isset($executed_migrations[$value]);
-  });
+  if ($rabbit_hole->get('redirect') && $rabbit_hole->get('allow_override')) {
+    /** @var \Drupal\Core\Utility\Token $token_service */
+    $token_service = \Drupal::service('token');
+    $target = $token_service->replace($rabbit_hole->get('redirect'), ['node' => $entity]);
 
-  if (!empty($required_migrations)) {
-    $manager = \Drupal::service('plugin.manager.migration');
-    $required_migrations = $manager->createInstances($required_migrations);
-    $dependency_options = array_merge($options, ['is_dependency' => TRUE]);
-    array_walk($required_migrations, 'hs_field_helpers_execute_migration', $dependency_options);
-    $executed_migrations += $required_migrations;
+    $entity->set('rh_action', 'display_page');
+
+    // Check if the token that was provided is actually a url. If it is, then we
+    // can set the rabbit hole action to redirect to that url.
+    if (is_string($target) && UrlHelper::isValid($target, TRUE)) {
+      $entity->set('rh_action', 'bundle_default');
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view().
+ */
+function hs_field_helpers_node_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  $rabbit_hole = \Drupal::config('rabbit_hole.behavior_settings.node_type_' . $entity->bundle());
+
+  // If we are not on the current node page or rabbit hole isn't redirecting.
+  if ($rabbit_hole->get('action') != 'page_redirect' || !node_is_page($entity)) {
+    return;
   }
 
-  // Finally run this migration.
-  $log = new MigrateMessage();
-  $executable = new MigrateExecutable($migration, $log, $options);
-  $executable->import();
-  $executed_migrations[$migration_id] = $migration_id;
+  // Check if there are individual node settings or if the given node is set to
+  // redirect.
+  if (
+    !$rabbit_hole->get('allow_override') ||
+    $entity->get('rh_action')->getString() == 'bundle_default'
+  ) {
+    $token_service = \Drupal::service('token');
+    $target = $token_service->replace($rabbit_hole->get('redirect'), ['node' => $entity]);
+
+    // Display a message to the user that this page would redirect to another
+    // location for other users.
+    \Drupal::messenger()
+      ->addWarning(t('This page will redirect to @url for other visitors.', ['@url' => $target]));
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ */
+function hs_field_helpers_field_storage_config_presave(FieldStorageConfigInterface $entity) {
+  $permission_type = $entity->getThirdPartySetting('field_permissions', 'permission_type');
+
+  // If the field is configured to be public, we don't need to create an
+  // unnecessary dependency on the field_permission module.
+  if ($permission_type == FieldPermissionTypeInterface::ACCESS_PUBLIC) {
+    $entity->unsetThirdPartySetting('field_permissions', 'permission_type');
+    // Reset dependencies.
+    $entity->calculateDependencies();
+  }
 }

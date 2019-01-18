@@ -5,6 +5,7 @@
 //
 
 // Decanter
+
 @import
   'decanter-no-markup';
 
@@ -25,16 +26,20 @@
         @include margin((-7rem) null 0);
       }
 
-
       &.expanded {
         input.button {
           z-index: 999;
         }
 
-        input.form-search, input[type=text] {
+        input.form-search,
+        input[type=text] {
           background: $color-white;
           width: 145px;
         }
+      }
+
+      .js-form-item-search {
+        @include margin(0);
       }
     }
 
@@ -42,10 +47,10 @@
       &.button {
         display: block;
         position: absolute;
-        background: url("../../img/search.svg") no-repeat;
+        background: url('../../img/search.svg') no-repeat;
         background-size: 45px 45px;
-        top: 21px;
-        right: 1px;
+        top: 5px;
+        right: 0;
         border: 0;
         font-size: 0;
         width: 45px;
@@ -53,8 +58,9 @@
         z-index: -999;
       }
 
-      &.form-search, &[type=text] {
-        background: url("../../img/search.svg") no-repeat center right;
+      &.form-search,
+      &[type=text] {
+        background: url('../../img/search.svg') no-repeat center right;
         background-color: $color-white;
         background-size: 45px 45px;
         -webkit-transition: width 0.6s, border-radius 0.6s, background 0s, box-shadow 0.6s;
@@ -62,7 +68,7 @@
         width: 0;
         height: auto;
         border-radius: 25px;
-        border: none;
+        border: 0;
         cursor: pointer;
         box-shadow: 0 0 0 1.5px $color-cloud;
 
@@ -71,7 +77,7 @@
         .user-is-tabbing &:hover,
         .user-is-tabbing &:focus {
           box-shadow: 0 0 0 2px $color-bright-red;
-          border: none;
+          border: 0;
         }
 
         .user-is-tabbing &:focus {
