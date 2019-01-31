@@ -1,0 +1,6 @@
+name: 'H&S Events Decoupled Blocks'
+description: 'Decoupled blocks for display'
+core: 8.x
+type: module
+version: 8.x
+package: 'Humanities & Sciences'
